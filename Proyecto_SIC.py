@@ -2,6 +2,7 @@ import random
 import numpy as np
 import math as m
 import matplotlib.pyplot as plt
+import copy
 
 # ==== VARIABLES GLOBALES ====
 mejores_fitness = []
@@ -28,7 +29,7 @@ def solicitar_datos_problema(codificacion):
         diccionario_cromosomas = {}
         for i in range(x):
             cantidad = int(input(f"Ingrese cantidad máxima para x{i+1}: "))
-            diccionario_cromosomas[f'x{i+1}'] = int(m.log2(cantidad + 1)) if cantidad > 1 else 1
+            diccionario_cromosomas[f'x{i+1}'] = int(m.ceil(m.log2(cantidad + 1))) if cantidad > 0 else 1
 
     return x, pesos, utilidad, capacidad_max, diccionario_cromosomas
 
@@ -45,7 +46,7 @@ def algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar
         for i in range(n):
             peso_total = np.sum(pobl[i] * pesos)
             utilidad_total = np.sum(pobl[i] * utilidad)
-            fitness[i] = utilidad_total if peso_total <= capacidad_max else 0
+            fitness[i] = utilidad_total if peso_total <= capacidad_max else 0            
         return fitness, np.sum(fitness)
 
     def mutar(ind):
@@ -116,7 +117,6 @@ def algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar
             nueva_poblacion.extend([h1, h2])
 
         poblIt = np.array(nueva_poblacion[:n])
-        fitness, total = evaluar(poblIt)
 
         if usar_elitismo:
             reemplazar_idx = np.argsort(fitness)[:num_elites]
@@ -124,6 +124,7 @@ def algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar
                 poblIt[idx] = elites[i]
                 fitness[idx] = elites_fitness[i]
 
+        fitness, total = evaluar(poblIt)
         imprime(poblIt, fitness, total)
 
 # ==== ALGORITMO ENTERO ====
@@ -131,24 +132,66 @@ def algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_
     global mejores_fitness, acumulado
     acumulado = np.zeros(n)
 
-    def generar_poblacion():
-        poblacion = []
-        for _ in range(n):
+    def generar_individuo_valido():
+        while True:
             individuo = []
             for j in range(x):
                 bits = diccionario_cromosomas[f'x{j+1}']
                 valor = random.randint(0, (2**bits) - 1)
                 individuo.append(valor)
-            poblacion.append(individuo)
-        return np.array(poblacion)
+            if np.sum(np.array(individuo) * pesos) <= capacidad_max:
+                return individuo
 
-    def evaluar(pobl):
-        fitness = np.zeros(n)
-        for i in range(n):
-            peso_total = np.sum(pobl[i] * pesos)
-            utilidad_total = np.sum(pobl[i] * utilidad)
-            fitness[i] = utilidad_total if peso_total <= capacidad_max else 0
-        return fitness, np.sum(fitness)
+    def generar_poblacion():
+        poblacion = []
+        while len(poblacion) < n:
+            poblacion.append(generar_individuo_valido())
+        return np.array(poblacion)
+    
+    def evaluar(pobl, pesos, utilidad, capacidad_max):
+        fitness = np.zeros(len(pobl))
+
+        def bin_to_int(bits):
+            return sum(b * (2 ** i) for i, b in enumerate(reversed(bits)))
+
+        for i in range(len(pobl)):
+            try:
+                peso_total = 0
+                utilidad_total = 0
+                if len(pobl[i]) != len(pesos):
+                    print(f"❌ Longitud incorrecta en individuo {i}: {pobl[i]}")
+                    fitness[i] = 0
+                    continue
+
+                for j in range(len(pobl[i])):
+                    gen = pobl[i][j]
+                    try:
+                        if isinstance(gen, (list, np.ndarray)):
+                            valor = bin_to_int([int(b) for b in gen])
+                        else:
+                            valor = int(gen)
+                    except Exception as e:
+                        print(f"⚠️ Error en gen {j} del individuo {i}: {gen} ({type(gen)}) -> {e}")
+                        valor = 0
+
+                    peso_total += valor * pesos[j]
+                    utilidad_total += valor * utilidad[j]
+
+                if peso_total <= capacidad_max:
+                    fitness[i] = utilidad_total
+                else:
+                    fitness[i] = 0
+
+                print(f"✅ Individuo {i}: peso={peso_total}, utilidad={utilidad_total}, fitness={fitness[i]}")
+
+            except Exception as e:
+                print(f"❌ Individuo {i} inválido: {e}")
+                fitness[i] = 0
+
+        total = np.sum(fitness)
+        print("🎯 Fitness:", fitness)
+        print("🧮 Suma real:", total)
+        return fitness, total
 
     def mutar(ind):
         if tipo_mutacion == "intercambio" and len(ind) >= 2 and random.random() < Pmuta:
@@ -166,41 +209,93 @@ def algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_
             if tipo_cruce == "2puntos":
                 cp1 = random.randint(1, x - 2)
                 cp2 = random.randint(cp1 + 1, x - 1)
-                h1 = np.concatenate((p1[:cp1], p2[cp1:cp2], p1[cp2:]))
-                h2 = np.concatenate((p2[:cp1], p1[cp1:cp2], p2[cp2:]))
-            else:
+                h1 = p1[:cp1].copy().tolist() + p2[cp1:cp2].copy().tolist() + p1[cp2:].copy().tolist()
+                h2 = p2[:cp1].copy().tolist() + p1[cp1:cp2].copy().tolist() + p2[cp2:].copy().tolist()
+            else:  # cruce de 1 punto
                 cp = random.randint(1, x - 1)
-                h1 = np.concatenate((p1[:cp], p2[cp:]))
-                h2 = np.concatenate((p2[:cp], p1[cp:]))
+                h1 = p1[:cp].copy().tolist() + p2[cp:].copy().tolist()
+                h2 = p2[:cp].copy().tolist() + p1[cp:].copy().tolist()
         else:
-            h1, h2 = p1.copy(), p2.copy()
-        return mutar(h1), mutar(h2)
+            h1 = p1.copy().tolist()
+            h2 = p2.copy().tolist()
+
+        return mutar(np.array(h1, dtype=int)), mutar(np.array(h2, dtype=int))
 
     def imprime(n, total, fitness, poblIt):
         global mejores_fitness
-        print("\nTabla Iteración:")
-        acum = 0
-        for i in range(n):
-            prob = fitness[i] / total if total else 0
-            acum += prob
-            acumulado[i] = acum
-            print(f"{i+1:<3} {str(poblIt[i]):<30} {fitness[i]:<10.2f} {prob:<10.3f} {acum:<10.3f}")
-        mejores_fitness.append(max(fitness))
 
-    def seleccion_padre(fit):
+        print("Poblacion a imprimir:")
+        print(poblIt)
+
+        print("Fitness a imprimir:")
+        print(fitness)
+
+        def bin_to_int(bits):
+            return sum(int(b) * (2 ** i) for i, b in enumerate(reversed(bits)))
+
+        def bits_to_str(bits):
+            return ''.join(str(int(b)) for b in bits)
+
+        print("\nTabla Iteración:\n")
+        print(f"{'Individuo':<10} {'Genotipo':<45} {'Fenotipo':<25} {'Fitness':<10} {'Probabilidad':<15} {'Acumulado':<10}")
+
+        acumula = 0
+        acumulado_local = []
+        
+
+        for i in range(n):
+            probab = fitness[i] / total if total != 0 else 0
+            acumula += probab
+            acumulado_local.append(acumula)
+
+            if isinstance(poblIt[i], (int, np.integer)):
+                genotipo_str = str(poblIt[i])
+                decimal_values = "Invalid"
+            else:
+                genotipo_str = []
+                decimal_values = []
+                for gene in poblIt[i]:
+                    if isinstance(gene, (list, np.ndarray)):
+                        genotipo_str.append(bits_to_str(gene))
+                        decimal_values.append(int(bin_to_int(gene)))
+                    else:
+                        genotipo_str.append(bin(int(gene))[2:])
+                        decimal_values.append(int(gene))  # ✅ limpieza aquí
+
+            print(f"{i+1:<10} {str(genotipo_str):<45} {str(decimal_values):<25} {fitness[i]:<10.1f} {probab:<15.3f} {acumula:<10.3f}")
+
+        print("Suma Z:      ", total)
+        mejores_fitness.append(float(max(fitness)))
+        return acumulado_local
+
+
+
+    def seleccion_padre(fitness, acumulado, poblIt, tipo_seleccion, tam_torneo):
         if tipo_seleccion == "ruleta":
             r = np.random.rand()
-            for i in range(n):
+            for i in range(len(fitness)):
                 if acumulado[i] > r:
                     return poblIt[i]
-            return poblIt[-1]
-        else:
-            indices = np.random.choice(n, tam_torneo, replace=False)
-            return poblIt[max(indices, key=lambda i: fit[i])]
+            return poblIt[-1]  # Fallback
+        elif tipo_seleccion == "torneo":
+            # Selecciona 'tam_torneo' individuos al azar
+            indices = random.sample(range(len(fitness)), tam_torneo)
+            # Busca el de mejor fitness entre los seleccionados
+            mejor_idx = indices[0]
+            for idx in indices[1:]:
+                if fitness[idx] > fitness[mejor_idx]:
+                    mejor_idx = idx
+            return poblIt[mejor_idx]
+
 
     poblIt = generar_poblacion()
-    fitness, total = evaluar(poblIt)
-    imprime(n, total, fitness, poblIt)
+    fitness, total = evaluar(poblIt, pesos, utilidad, capacidad_max)
+
+    for i, ind in enumerate(poblIt):
+        print(f"i: {i}, Genotipo: {ind}, Fitness: {fitness[i]}")
+
+    acumulado = imprime(n, total, fitness, poblIt)
+
 
     for generacion in range(20):
         print(f"\n--- Generación {generacion + 1} ---")
@@ -213,19 +308,29 @@ def algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_
 
         nueva_poblacion = []
         while len(nueva_poblacion) < n:
-            p1 = seleccion_padre(fitness)
-            p2 = seleccion_padre(fitness)
+            # ejemplo dentro del ciclo de cruce
+            p1 = seleccion_padre(fitness, acumulado, poblIt, tipo_seleccion, tam_torneo)
+            p2 = seleccion_padre(fitness, acumulado, poblIt, tipo_seleccion, tam_torneo)
             h1, h2 = cruzar(p1, p2)
             nueva_poblacion.extend([h1, h2])
 
         poblIt = np.array(nueva_poblacion[:n])
-        fitness, total = evaluar(poblIt)
+        
+        print("Poblacion a evaluar:")
+        print(poblIt)
 
         if usar_elitismo:
             reemplazar_idx = np.argsort(fitness)[:num_elites]
             for i, idx in enumerate(reemplazar_idx):
                 poblIt[idx] = elites[i]
                 fitness[idx] = elites_fitness[i]
+
+        fitness, total = evaluar(poblIt, pesos, utilidad, capacidad_max)
+
+        print("Fitness:")
+        print(fitness)
+
+        
 
         imprime(n, total, fitness, poblIt)
 
@@ -342,14 +447,14 @@ def plot_fitness():
 print("\nCONFIGURACIÓN DEL ALGORITMO GENÉTICO")
 tipo_codificacion = input("Tipo de codificación (binario / entero / decimal): ").strip().lower()
 tipo_seleccion = input("Tipo de selección (ruleta / torneo): ").strip().lower()
+tam_torneo = int(input("Tamaño del torneo (si aplica): ")) if tipo_seleccion == "torneo" else 0
 tipo_cruce = input("Tipo de cruce (1punto / 2puntos): ").strip().lower()
 tipo_mutacion = input("Tipo de mutación (normal / intercambio): ").strip().lower()
 usar_elitismo = input("¿Usar elitismo? (s/n): ").strip().lower() == 's'
 num_elites = int(input("Cantidad de élites (si aplica): ")) if usar_elitismo else 0
-tam_torneo = int(input("Tamaño del torneo (si aplica): ")) if tipo_seleccion == "torneo" else 0
 Pcruce = float(input("Probabilidad de cruce (0.0 a 1.0): "))
 Pmuta = float(input("Probabilidad de mutación (0.0 a 1.0): "))
-n = int(input("Tamaño de la población: "))
+n = int(input("Tamaño de la población: "))  #Automatizarlas para las distintas soluciones
 
 x, pesos, utilidad, capacidad_max, diccionario_cromosomas = solicitar_datos_problema(tipo_codificacion)
 
