@@ -49,14 +49,49 @@ def definir_tamano_poblacion_binario(x):
 
 def solicitar_datos_problema(codificacion):
     if codificacion == "decimal":
-        return None, None, None, None, None, None  # No aplica
+        return None, None, None, None, None, None  # No aplica para decimal
 
     print("\nCONFIGURACIÓN DEL PROBLEMA DE LA MOCHILA")
-    x = int(input("Número de elementos: "))
-    pesos = list(map(int, input("Ingrese los pesos separados por espacio: ").split()))
-    utilidad = list(map(int, input("Ingrese las utilidades separados por espacio: ").split()))
-    capacidad_max = int(input("Capacidad máxima de la mochila: "))
-    assert len(pesos) == x and len(utilidad) == x, "Datos inconsistentes."
+
+    # Validar número de elementos
+    while True:
+        try:
+            x = int(input("Número de elementos: "))
+            if x > 0:
+                break
+            print("❌ Debe ser un número mayor que 0.")
+        except ValueError:
+            print("❌ Ingresa un número entero válido.")
+
+    # Validar pesos
+    while True:
+        try:
+            pesos = list(map(int, input(f"Ingrese {x} pesos separados por espacio: ").split()))
+            if len(pesos) == x and all(p >= 0 for p in pesos):
+                break
+            print(f"❌ Debes ingresar exactamente {x} números enteros no negativos.")
+        except ValueError:
+            print("❌ Asegúrate de ingresar solo números enteros.")
+
+    # Validar utilidades
+    while True:
+        try:
+            utilidad = list(map(int, input(f"Ingrese {x} utilidades separadas por espacio: ").split()))
+            if len(utilidad) == x:
+                break
+            print(f"❌ Debes ingresar exactamente {x} números.")
+        except ValueError:
+            print("❌ Asegúrate de ingresar solo números enteros.")
+
+    # Validar capacidad máxima
+    while True:
+        try:
+            capacidad_max = int(input("Capacidad máxima de la mochila: "))
+            if capacidad_max > 0:
+                break
+            print("❌ Debe ser un número entero positivo.")
+        except ValueError:
+            print("❌ Ingresa un número entero válido.")
 
     diccionario_cromosomas = None
     n = None
@@ -64,12 +99,22 @@ def solicitar_datos_problema(codificacion):
     if codificacion == "entero":
         diccionario_cromosomas = {}
         longitud_total = 0
-        for i in range(x):
-            cantidad = int(input(f"Ingrese cantidad máxima para x{i+1} (Ej: si x{i+1} va de 0 a 10, escribe 10): "))
-            bits = int(m.ceil(m.log2(cantidad + 1))) if cantidad > 0 else 1
-            diccionario_cromosomas[f'x{i+1}'] = bits
-            longitud_total += bits
 
+        for i in range(x):
+            while True:
+                try:
+                    cantidad = int(input(f"Ingrese cantidad máxima para x{i+1} (Ej: si x{i+1} va de 0 a 10, escribe 10): "))
+                    if cantidad >= 0:
+                        bits = int(m.ceil(m.log2(cantidad + 1))) if cantidad > 0 else 1
+                        diccionario_cromosomas[f'x{i+1}'] = bits
+                        longitud_total += bits
+                        break
+                    else:
+                        print("❌ Debe ser un número entero mayor o igual a 0.")
+                except ValueError:
+                    print("❌ Ingresa un número entero válido.")
+
+        # Sugerencia del tamaño de población
         min_pobl = longitud_total * 2
         max_pobl = longitud_total * 5
 
@@ -82,7 +127,7 @@ def solicitar_datos_problema(codificacion):
                 else:
                     print("❌ Tamaño fuera del rango sugerido.")
             except ValueError:
-                print("❌ Ingresa un número válido.")
+                print("❌ Ingresa un número entero válido.")
 
     return x, pesos, utilidad, capacidad_max, diccionario_cromosomas, n
 
@@ -566,18 +611,94 @@ def plot_fitness():
     plt.grid(True)
     plt.show()
 
-# ==== FLUJO PRINCIPAL ====
 print("\nCONFIGURACIÓN DEL ALGORITMO GENÉTICO")
-tipo_codificacion = input("Tipo de codificación (binario / entero / decimal): ").strip().lower()
-maximizar_minimizar = input("¿Maximizar o minimizar? (max/min): ").strip().lower()
-tipo_seleccion = input("Tipo de selección (ruleta / torneo): ").strip().lower()
-tam_torneo = int(input("Tamaño del torneo (si aplica): ")) if tipo_seleccion == "torneo" else 0
-tipo_cruce = input("Tipo de cruce (1punto / 2puntos): ").strip().lower()
-tipo_mutacion = input("Tipo de mutación (normal / intercambio): ").strip().lower()
-usar_elitismo = input("¿Usar elitismo? (s/n): ").strip().lower() == 's'
-num_elites = int(input("Cantidad de élites (si aplica): ")) if usar_elitismo else 0
-Pcruce = float(input("Probabilidad de cruce (0.0 a 1.0): "))
-Pmuta = float(input("Probabilidad de mutación (0.0 a 1.0): "))
+
+# Tipo de codificación
+while True:
+    tipo_codificacion = input("Tipo de codificación (binario / entero / decimal): ").strip().lower()
+    if tipo_codificacion in ["binario", "entero", "decimal"]:
+        break
+    print("❌ Opción no válida. Elige: binario, entero o decimal.")
+
+# Modo de optimización
+while True:
+    maximizar_minimizar = input("¿Maximizar o minimizar? (max/min): ").strip().lower()
+    if maximizar_minimizar in ["max", "min"]:
+        break
+    print("❌ Escribe 'max' para maximizar o 'min' para minimizar.")
+
+# Tipo de selección
+while True:
+    tipo_seleccion = input("Tipo de selección (ruleta / torneo): ").strip().lower()
+    if tipo_seleccion in ["ruleta", "torneo"]:
+        break
+    print("❌ Selección no válida. Usa: ruleta o torneo.")
+
+# Tamaño del torneo (solo si aplica)
+tam_torneo = 0
+if tipo_seleccion == "torneo":
+    while True:
+        try:
+            tam_torneo = int(input("Tamaño del torneo (entero > 1): "))
+            if tam_torneo > 1:
+                break
+            print("❌ El tamaño debe ser mayor que 1.")
+        except ValueError:
+            print("❌ Ingrese un número entero válido.")
+
+# Tipo de cruce
+while True:
+    tipo_cruce = input("Tipo de cruce (1punto / 2puntos): ").strip().lower()
+    if tipo_cruce in ["1punto", "2puntos"]:
+        break
+    print("❌ Cruce no válido. Usa: 1punto o 2puntos.")
+
+# Tipo de mutación
+while True:
+    tipo_mutacion = input("Tipo de mutación (normal / intercambio): ").strip().lower()
+    if tipo_mutacion in ["normal", "intercambio"]:
+        break
+    print("❌ Mutación no válida. Usa: normal o intercambio.")
+
+# Elitismo
+while True:
+    elitismo_input = input("¿Usar elitismo? (s/n): ").strip().lower()
+    if elitismo_input in ["s", "n"]:
+        usar_elitismo = elitismo_input == 's'
+        break
+    print("❌ Opción inválida. Escribe 's' para sí o 'n' para no.")
+
+# Número de élites (si aplica)
+num_elites = 0
+if usar_elitismo:
+    while True:
+        try:
+            num_elites = int(input("Cantidad de élites (entero >= 1): "))
+            if num_elites >= 1:
+                break
+            print("❌ Debe ser al menos 1.")
+        except ValueError:
+            print("❌ Ingresa un número entero válido.")
+
+# Probabilidad de cruce
+while True:
+    try:
+        Pcruce = float(input("Probabilidad de cruce (0.0 a 1.0): "))
+        if 0.0 <= Pcruce <= 1.0:
+            break
+        print("❌ Debe estar entre 0.0 y 1.0.")
+    except ValueError:
+        print("❌ Ingresa un número válido.")
+
+# Probabilidad de mutación
+while True:
+    try:
+        Pmuta = float(input("Probabilidad de mutación (0.0 a 1.0): "))
+        if 0.0 <= Pmuta <= 1.0:
+            break
+        print("❌ Debe estar entre 0.0 y 1.0.")
+    except ValueError:
+        print("❌ Ingresa un número válido.")
 
 # ==== DATOS DEL PROBLEMA ====
 x, pesos, utilidad, capacidad_max, diccionario_cromosomas, n = solicitar_datos_problema(tipo_codificacion)
