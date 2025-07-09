@@ -9,8 +9,8 @@ acumulado = None
 
 # ==== CONFIGURACIÓN PARA DECIMAL ====
 Xmin = 0
-Xmax = 10
-num_decimales = 2
+Xmax = 15
+num_decimales = 1
 
 # ==== CONFIGURACIÓN DEL TAMAÑO DE LA POBLACIÓN (solo para decimal) ====
 def definir_tamano_poblacion_decimal(lind):
@@ -133,7 +133,7 @@ def solicitar_datos_problema(codificacion):
 
 
 def algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_elitismo, num_elites,
-                      tam_torneo, Pcruce, Pmuta, tipo_cruce, tipo_mutacion, maximizar_minimizar):
+                      tam_torneo, Pcruce, Pmuta, tipo_cruce, tipo_mutacion, maximizar_minimizar, num_iteraciones):
     global mejores_fitness, acumulado
     acumulado = np.zeros(n)
 
@@ -252,7 +252,7 @@ def algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar
     fitness, valores, total = evaluar(poblIt, maximizar_minimizar)
     imprime(poblIt, fitness, valores, total, maximizar_minimizar, pesos, utilidad)
 
-    for generacion in range(20):
+    for generacion in range(num_iteraciones):
         print(f"\n--- Generación {generacion + 1} ---")
 
         elites = []
@@ -308,7 +308,7 @@ def algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar
 
 def algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_elitismo,
                      num_elites, tam_torneo, Pcruce, Pmuta, diccionario_cromosomas,
-                     tipo_cruce, tipo_mutacion, maximizar_minimizar):
+                     tipo_cruce, tipo_mutacion, maximizar_minimizar, num_iteraciones):
     global mejores_fitness, acumulado
     acumulado = np.zeros(n)
 
@@ -436,7 +436,7 @@ def algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_
     fitness, valores, total = evaluar(poblIt, pesos, utilidad, capacidad_max, maximizar_minimizar)
     imprime(n, total, fitness, poblIt, diccionario_cromosomas, maximizar_minimizar)
 
-    for generacion in range(20):
+    for generacion in range(num_iteraciones):
         print(f"\n--- Generación {generacion + 1} ---")
 
         elites, elites_fitness = [], []
@@ -476,7 +476,7 @@ def algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_
         imprime(n, total, fitness, poblIt, diccionario_cromosomas, maximizar_minimizar)
 
 # ==== ALGORITMO DECIMAL ====
-def algoritmo_decimal(Pcruce, Pmuta, tipo_cruce, tipo_mutacion, usar_elitismo, num_elites, tipo_seleccion, tam_torneo, maximizar_minimizar):
+def algoritmo_decimal(Pcruce, Pmuta, tipo_cruce, tipo_mutacion, usar_elitismo, num_elites, tipo_seleccion, tam_torneo, maximizar_minimizar, num_iteraciones):
     global mejores_fitness, acumulado
     lind = int(round(m.log2((Xmax - Xmin) * 10**num_decimales)))
     n = definir_tamano_poblacion_decimal(lind)
@@ -487,7 +487,7 @@ def algoritmo_decimal(Pcruce, Pmuta, tipo_cruce, tipo_mutacion, usar_elitismo, n
     intervalos_invalidos = [(3, 4), (7, 8)]  # Puedes modificar o vaciar la lista
 
     def funcion_objetivo(x):
-        return (x - 5)**2 + np.sin(x)  # ✅ Cambia aquí la función fácilmente
+        return np.abs(x-5 / 2+np.sin(x))  # ✅ Cambia aquí la función fácilmente
 
     def es_invalido(xi):
         return any(a < xi < b for (a, b) in intervalos_invalidos)
@@ -574,7 +574,7 @@ def algoritmo_decimal(Pcruce, Pmuta, tipo_cruce, tipo_mutacion, usar_elitismo, n
     fitness, total, xi = evaluar(poblIt)
     imprime(poblIt, fitness, xi, total)
 
-    for gen in range(20):
+    for gen in range(num_iteraciones):
         print(f"\n--- Generación {gen + 1} ---")
 
         elites = []
@@ -700,6 +700,18 @@ while True:
     except ValueError:
         print("❌ Ingresa un número válido.")
 
+# Número de iteraciones
+while True:
+    try:
+        num_iteraciones = int(input("Número de generaciones (iteraciones): "))
+        if num_iteraciones > 0:
+            break
+        else:
+            print("❌ El número debe ser mayor que 0.")
+    except ValueError:
+        print("❌ Ingresa un número entero válido.")
+
+
 # ==== DATOS DEL PROBLEMA ====
 x, pesos, utilidad, capacidad_max, diccionario_cromosomas, n = solicitar_datos_problema(tipo_codificacion)
 
@@ -709,11 +721,11 @@ if tipo_codificacion == "binario":
 
 
 if tipo_codificacion == "binario":
-    algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_elitismo, num_elites, tam_torneo, Pcruce, Pmuta, tipo_cruce, tipo_mutacion, maximizar_minimizar)
+    algoritmo_binario(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_elitismo, num_elites, tam_torneo, Pcruce, Pmuta, tipo_cruce, tipo_mutacion, maximizar_minimizar, num_iteraciones)
 elif tipo_codificacion == "entero":
-    algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_elitismo, num_elites, tam_torneo, Pcruce, Pmuta, diccionario_cromosomas, tipo_cruce, tipo_mutacion, maximizar_minimizar)
+    algoritmo_entero(n, x, pesos, utilidad, capacidad_max, tipo_seleccion, usar_elitismo, num_elites, tam_torneo, Pcruce, Pmuta, diccionario_cromosomas, tipo_cruce, tipo_mutacion, maximizar_minimizar, num_iteraciones)
 elif tipo_codificacion == "decimal":
-    algoritmo_decimal(Pcruce, Pmuta, tipo_cruce, tipo_mutacion, usar_elitismo, num_elites, tipo_seleccion, tam_torneo, maximizar_minimizar)
+    algoritmo_decimal(Pcruce, Pmuta, tipo_cruce, tipo_mutacion, usar_elitismo, num_elites, tipo_seleccion, tam_torneo, maximizar_minimizar, num_iteraciones)
 else:
     print("Codificación no soportada.")
 
