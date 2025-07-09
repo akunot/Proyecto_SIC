@@ -730,3 +730,7 @@ else:
     print("Codificación no soportada.")
 
 plot_fitness()
+
+# Hecho por:
+# Sergio Alejandro Castro Botero
+# Maria Fernanda Gomez Narvaez
