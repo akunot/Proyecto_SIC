@@ -147,7 +147,7 @@ def solicitar_datos_problema(codificacion):
     if codificacion == "decimal":
         return None, None, None, None, None, None  # No aplica para decimal
 
-    print("\nCONFIGURACIÓN DEL PROBLEMA DE LA MOCHILA")
+    print("\nCONFIGURACIÓN DE LOS DATOS DEL PROBLEMA")
 
     # Validar número de elementos
     while True:
@@ -162,7 +162,7 @@ def solicitar_datos_problema(codificacion):
     # Validar pesos
     while True:
         try:
-            pesos = list(map(int, input(f"Ingrese {x} pesos separados por espacio: ").split()))
+            pesos = list(map(int, input(f"Ingrese {x} valores de 'peso' separados por espacio: ").split()))
             if len(pesos) == x and all(p >= 0 for p in pesos):
                 break
             print(f"❌ Debes ingresar exactamente {x} números enteros no negativos.")
@@ -172,7 +172,7 @@ def solicitar_datos_problema(codificacion):
     # Validar utilidades
     while True:
         try:
-            utilidad = list(map(int, input(f"Ingrese {x} utilidades separadas por espacio: ").split()))
+            utilidad = list(map(int, input(f"Ingrese {x} valores de 'utilidad' separados por espacio: ").split()))
             if len(utilidad) == x:
                 break
             print(f"❌ Debes ingresar exactamente {x} números.")
@@ -182,7 +182,7 @@ def solicitar_datos_problema(codificacion):
     # Validar capacidad máxima
     while True:
         try:
-            capacidad_max = int(input("Capacidad máxima de la mochila: "))
+            capacidad_max = int(input("Ingrese el valor máximo permitido para la suma de los pesos: "))
             if capacidad_max > 0:
                 break
             print("❌ Debe ser un número entero positivo.")
@@ -199,7 +199,7 @@ def solicitar_datos_problema(codificacion):
         for i in range(x):
             while True:
                 try:
-                    cantidad = int(input(f"🔢 ¿Cuál es el valor **máximo permitido** para x{i+1}? (Ejemplo: si x{i+1} puede tomar valores de 0 a 10, escribe 10): "))
+                    cantidad = int(input(f"🔢 Valor máximo permitido para x{i+1} (Ejemplo: si x{i+1} puede tomar valores de 0 a 10, escribe 10): "))
                     if cantidad >= 1:
                         bits = int(m.ceil(m.log2(cantidad+1))) if cantidad > 0 else 1
                         diccionario_cromosomas[f'x{i+1}'] = bits
