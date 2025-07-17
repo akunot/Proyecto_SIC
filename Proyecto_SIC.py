@@ -115,29 +115,47 @@ def crear_funcion_objetivo_math():
 
 
 # ==== CONFIGURACIÓN DE RESTRICCIONES ====
-def obtener_restricciones():
+def obtener_restricciones(Xmin, Xmax, max_intervalos=10):
+    """
+    Versión mejorada que detecta TODOS los solapamientos
+    """
     usar = input("¿Deseas usar restricciones? (s/n): ").strip().lower()
-    usar_restricciones = usar == 's'
+    if usar != 's':
+        return False, []
 
     intervalos = []
-    if usar_restricciones:
-        print("Ingresa los intervalos inválidos uno por uno (ej: 3,4). Escribe 'fin' para terminar.")
-        while True:
-            entrada = input("Intervalo inválido (o 'fin'): ").strip()
-            if entrada.lower() == 'fin':
-                break
-            try:
-                partes = entrada.split(',')
-                if len(partes) != 2:
-                    raise ValueError("Debes ingresar dos números separados por coma.")
-                a, b = float(partes[0]), float(partes[1])
-                if a >= b:
-                    raise ValueError("El primer número debe ser menor que el segundo.")
-                intervalos.append((a, b))
-            except Exception as e:
-                print(f"❌ Entrada inválida: {e}")
+    print(f"\nIngresa intervalos inválidos en [{Xmin}, {Xmax}]. Ej: 1.5,2.5")
 
-    return usar_restricciones, intervalos
+    while len(intervalos) < max_intervalos:
+        entrada = input(f"Intervalo {len(intervalos)+1} (o 'fin'): ").strip()
+        if entrada.lower() == 'fin':
+            break
+
+        try:
+            # Convertir entrada a floats
+            a, b = sorted([float(x.replace(',', '.')) for x in entrada.split(',')])
+            
+            # Validaciones
+            if a == b:
+                raise ValueError("El intervalo no puede ser un punto")
+            if a < Xmin or b > Xmax:
+                raise ValueError(f"Fuera de rango [{Xmin}, {Xmax}]")
+                
+            # Detección infalible de solapamientos
+            for x in intervalos:
+                if not (b <= x[0] or a >= x[1]):
+                    raise ValueError(f"Solapa con [{x[0]}, {x[1]}]")
+            
+            intervalos.append((a, b))
+            print(f"✅ Añadido: [{a:.2f}, {b:.2f}]")
+            print(f"Intervalos actuales: {sorted(intervalos)}")
+            
+        except ValueError as e:
+            print(f"❌ Error: {e}")
+        except Exception:
+            print("❌ Formato inválido. Usa: inicio,fin")
+
+    return True, sorted(intervalos)
 
 # === PLOT DECIMAL ====
 def plot_decimal_fitness_y_funcion(mejores_fitness, funcion_objetivo, Xmin, Xmax):
@@ -698,7 +716,7 @@ def algoritmo_decimal(Pcruce, Pmuta, tipo_cruce, tipo_mutacion, usar_elitismo, n
     funcion_objetivo = crear_funcion_objetivo_math()
 
     # Ingreso de restricciones desde consola
-    usar_restricciones, intervalos_invalidos = obtener_restricciones()
+    usar_restricciones, intervalos_invalidos = obtener_restricciones(Xmin, Xmax)
 
 
     def es_invalido(xi):
@@ -979,7 +997,6 @@ while True:
     # Preguntar si desea continuar o salir
     salir = input("\n¿Desea ejecutar otra vez? (s/n): ").strip().lower()
     if salir == 'n':
-        # En las secciones de autores:
         print("\n" + "="*50)
         print("Proyecto de Algoritmos Genéticos".center(50))
         print("Versión 1.0".center(50))
@@ -989,3 +1006,5 @@ while True:
         print("- Maria Fernanda Gomez Narvaez")
         print("="*50)
         break
+    elif salir != 's':
+        print("❌ Opción inválida. Escribe 's' para continuar o 'n' para salir.")
