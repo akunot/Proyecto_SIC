@@ -43,30 +43,75 @@ def definir_tamano_poblacion_binario(x):
 
 # ==== CREAR FUNCIÓN OBJETIVO ====
 def crear_funcion_objetivo_math():
-    funciones_permitidas = {k: getattr(np, k) for k in dir(np) if not k.startswith("_")}
-    funciones_permitidas["abs"] = abs
-
-    while True:
-        expresion = input("Ingresa la función usando 'x' (Ej: abs(x-5)/2 + sin(x)): ")
-        if "x" not in expresion:
-            print("⚠️  La función debe contener la variable 'x'. Intenta de nuevo.")
+    """
+    Crea una función objetivo matemática de forma segura a partir de una entrada de usuario.
+    Devuelve una función lambda que evalúa la expresión para un valor dado de x.
+    
+    Precauciones:
+    - Bloquea acceso a atributos peligrosos con __builtins__ restringido
+    - Valida el tipo de salida numérica
+    - Controla excepciones durante evaluación
+    """
+    
+    # 1. Lista blanca de funciones numpy permitidas (explicitamente definidas)
+    funciones_seguras = {
+        'sin': np.sin, 'cos': np.cos, 'tan': np.tan,
+        'exp': np.exp, 'log': np.log, 'log10': np.log10,
+        'sqrt': np.sqrt, 'abs': abs, 'pi': np.pi,
+        'e': np.e, 'arcsin': np.arcsin, 'arccos': np.arccos,
+        'arctan': np.arctan, 'sinh': np.sinh, 'cosh': np.cosh,
+        'tanh': np.tanh
+    }
+    
+    # 2. Entrada protegida con reintentos
+    max_intentos = 3
+    for intento in range(max_intentos):
+        expresion = input("\nIngresa la función usando 'x' (Ej: exp(-x)*sin(2*pi*x)): ").strip()
+        
+        # 3. Validación básica
+        if not expresion or 'x' not in expresion:
+            print("⚠️  La expresión debe contener la variable 'x' y no estar vacía.")
             continue
-
+            
+        # 4. Comprobación de tokens no permitidos
+        tokens_prohibidos = ['import', 'exec', 'open', 'os', 'sys', '__']
+        if any(token in expresion for token in tokens_prohibidos):
+            print("❌ Expresión contiene términos no permitidos")
+            continue
+            
         try:
-            funciones_permitidas["x"] = 1  # valor de prueba
-            resultado_prueba = eval(expresion, {"__builtins__": {}}, funciones_permitidas)
-            if not isinstance(resultado_prueba, (int, float)):
-                raise ValueError("La expresión no devuelve un número.")
+            # 5. Prueba con múltiples valores
+            test_values = [0, 1, 2.5, -1]  # Valores de prueba diversos
+            resultados = []
+            
+            for val in test_values:
+                funciones_seguras['x'] = val
+                res = eval(expresion, {"__builtins__": None}, funciones_seguras)
+                if not isinstance(res, (int, float)):
+                    raise TypeError(f"La expresión devolvió {type(res)}, se esperaba número")
+                resultados.append(res)
+                
+            # 6. Construcción segura de la función
+            def funcion_objetivo(x):
+                try:
+                    funciones_seguras['x'] = x
+                    return eval(expresion, {"__builtins__": None}, funciones_seguras)
+                except Exception as e:
+                    print(f"⚠️  Error al evaluar x={x}: {str(e)}")
+                    return float('-inf')  # Penalización por error
+                    
+            # 7. Prueba final de consistencia
+            if not all(np.isfinite(funcion_objetivo(x)) for x in test_values):
+                raise ValueError("La función genera valores no finitos")
+                
+            print(f"✅ Función válida (Pasó {len(test_values)} pruebas con valores {test_values})")
+            return funcion_objetivo
+            
         except Exception as e:
-            print(f"❌ Error en la expresión: {e}")
-            continue
-
-        def funcion_objetivo(x):
-            funciones_permitidas["x"] = x
-            return eval(expresion, {"__builtins__": {}}, funciones_permitidas)
-
-        print("✅ Función válida creada exitosamente.")
-        return funcion_objetivo
+            print(f"❌ Intento {intento+1}/{max_intentos} fallido: {str(e)}")
+            if intento == max_intentos - 1:
+                print("⚠️  Usando función por defecto f(x) = sin(x)")
+                return lambda x: np.sin(x)
 
 
 # ==== CONFIGURACIÓN DE RESTRICCIONES ====
@@ -934,9 +979,13 @@ while True:
     # Preguntar si desea continuar o salir
     salir = input("\n¿Desea ejecutar otra vez? (s/n): ").strip().lower()
     if salir == 'n':
-        print("¡Hasta luego!")
+        # En las secciones de autores:
+        print("\n" + "="*50)
+        print("Proyecto de Algoritmos Genéticos".center(50))
+        print("Versión 1.0".center(50))
+        print("="*50)
+        print("Autores:")
+        print("- Sergio Alejandro Castro Botero")
+        print("- Maria Fernanda Gomez Narvaez")
+        print("="*50)
         break
-
-# Hecho por:
-# Sergio Alejandro Castro Botero
-# Maria Fernanda Gomez Narvaez
