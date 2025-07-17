@@ -86,6 +86,29 @@ Define restricciones opcionales (intervalos inválidos), y observa cómo el algo
 
 ---
 
+## 🔮 Mejoras Futuras
+
+A continuación, se enumeran posibles mejoras para evolucionar este proyecto:
+
+- ✅ **Control de convergencia**:
+  - Incorporar un criterio automático de paro cuando el fitness se estabilice tras varias generaciones.
+
+- ✅ **Interfaz gráfica (GUI)**:
+  - Desarrollar una GUI con tkinter o PyQt que facilite la configuración y visualización sin depender de la consola.
+
+- ✅ **Extensión de codificación decimal**:
+  - Permitir problemas con múltiples variables continuas (`x`, `y`, etc.) y visualizar superficies 3D de f(x, y).
+
+- ✅ **Exportar resultados**:
+  - Agregar opción para guardar los resultados y gráficas en archivos `.csv` o `.png`.
+
+- ✅ **Integración con otros problemas**:
+  - Aplicar el algoritmo a problemas clásicos como TSP, scheduling, o regresión simbólica.
+
+Estas mejoras pueden guiar la siguiente etapa de desarrollo para convertir esta herramienta en un entorno más robusto y amigable.
+
+---
+
 ## 🧑‍💻 Autores
 
 - Sergio Alejandro Castro Botero  
